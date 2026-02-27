@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hunting Job with Chef Simon</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap');
+
+        body {
+            font-family: 'Comic Neue', cursive, sans-serif;
+            background-color: #f4f1ea;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #game-container {
+            width: 800px;
+            height: 600px;
+            background-color: #e8f4f8;
+            border: 5px solid #555;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* --- SISTEM SKRIN --- */
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: #e8f4f8;
+        }
+
+        .active { display: flex; }
+
+        /* --- GLOBAL COMPONENTS --- */
+        .btn {
+            background-color: #f39c12;
+            color: white;
+            border: 3px solid #d35400;
+            padding: 15px 40px;
+            font-size: 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 5px 0 #d35400;
+            transition: all 0.1s;
+            font-family: 'Comic Neue', cursive;
+            font-weight: bold;
+        }
+
+        .btn:active {
+            transform: translateY(5px);
+            box-shadow: none;
+        }
+
+        .dialog-box {
+            background-color: white;
+            border: 4px solid #333;
+            border-radius: 15px;
+            padding: 20px;
+            width: 70%;
+            font-size: 22px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stripe-awning {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 30px;
+            background: repeating-linear-gradient(to right, #e74c3c, #e74c3c 50px, #fff 50px, #fff 100px);
+            border-bottom: 4px solid #c0392b;
+            z-index: 20;
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 45px; 
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #27ae60;
+            z-index: 15;
+            background: #ffffff;
+            padding: 5px 20px;
+            border-radius: 10px;
+            border: 3px solid #333;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+        }
+
+        /* --- 1. INTRO SCREEN STYLING --- */
+        .shop-front-bg {
+            background: repeating-linear-gradient(-45deg, #e67e22, #e67e22 30px, #d35400 30px, #d35400 60px);
+            justify-content: center;
+        }
+
+        .game-title {
+            font-size: 55px;
+            color: #fff;
+            -webkit-text-stroke: 2px #2c3e50;
+            text-shadow: 3px 3px 0 #2c3e50, 0px 6px 0 rgba(0,0,0,0.4);
+            text-align: center;
+            margin-top: 50px;
+            margin-bottom: 25px;
+            z-index: 10;
+            line-height: 1.2;
+            letter-spacing: 2px;
+        }
+
+        .intro-modal {
+            background: white;
+            border: 4px solid #333;
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            width: 320px;
+            z-index: 10;
+        }
+
+        .intro-modal .img-container {
+            border: 2px solid #333;
+            border-radius: 10px;
+            width: 250px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            background-color: #fff;
+            padding: 5px;
+        }
+        
+        .intro-modal .img-container img {
+            width: 100%; 
+            height: auto; 
+            display: block;
+        }
+
+        .btn-mula {
+            width: 100%;
+            margin: 0;
+            padding: 15px;
+        }
+
+        /* --- 2. MAP SCREEN STYLING --- */
+        #map-screen { background-color: #e2f0cb; }
+        .shop-container { position: absolute; text-align: center; cursor: pointer; transition: transform 0.2s; z-index: 5; }
+        .shop-container:hover { transform: scale(1.1); }
+        .shop-pin { position: absolute; left: -35px; top: 60px; font-size: 50px; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.4)); z-index: 6; }
+        .shop-food-icon { font-size: 60px; display: block; margin-bottom: -35px; position: relative; z-index: 2; }
+        .shop-building-icon { font-size: 90px; filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.3)); }
+        .shop-label { background-color: white; border: 3px solid #333; border-radius: 10px; padding: 5px 15px; font-weight: bold; font-size: 20px; margin-top: -5px; box-shadow: 2px 4px 0px #333; }
+        .locked { filter: grayscale(0.7) brightness(0.8); }
+        .lock-icon { position: absolute; font-size: 80px; top: 10px; left: 10px; z-index: 10; filter: drop-shadow(0px 10px 10px rgba(0,0,0,0.5)); }
+
+        /* --- 3. LEVEL SELECTION SCREEN STYLING --- */
+        #level-screen { background-color: #e6e6fa; }
+        .levels-container { display: flex; gap: 40px; justify-content: center; align-items: center; margin-top: 50px; }
+        .level-circle { width: 180px; height: 180px; border-radius: 50%; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border: 6px solid #2980b9; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; position: relative; box-shadow: 0 10px 15px rgba(0,0,0,0.2); transition: transform 0.2s; overflow: hidden;}
+        .level-circle:hover:not(.locked-level) { transform: translateY(-10px) scale(1.05); box-shadow: 0 15px 25px rgba(0,0,0,0.3); }
+        .level-text { color: #ff6b81; font-size: 30px; font-weight: bold; text-shadow: 2px 2px 0 #fff, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; font-family: 'Courier New', Courier, monospace; z-index: 2; margin-top: 10px;}
+        .level-icon { z-index: 2; margin-top: 5px; }
+        .locked-level { cursor: not-allowed; background: linear-gradient(135deg, #1f4068 0%, #1b1b2f 100%); border-color: #162447; }
+        .locked-level .level-icon { display: none; }
+        .padlock-large { position: absolute; font-size: 80px; top: 50%; left: 50%; transform: translate(-50%, -40%); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); z-index: 10; }
+
+        /* --- 4. DIALOG SCREEN STYLING --- */
+        .dialog-character-img { height: 220px; width: auto; margin-bottom: 20px; filter: drop-shadow(2px 5px 5px rgba(0,0,0,0.2)); }
+        .chat-bubble { background-color: white; border: 4px solid #333; border-radius: 15px; padding: 30px 40px; font-size: 26px; text-align: center; width: 70%; max-width: 600px; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .btn-small { padding: 10px 25px; font-size: 20px; background-color: #f5f5dc; color: #333; border: 3px solid #333; box-shadow: 0 4px 0 #333; margin: 0; }
+        .btn-small:active { transform: translateY(4px); box-shadow: none; }
+
+        /* --- 5. GAMEPLAY & FOOD STYLING --- */
+        .gameplay-layout { display: flex; justify-content: center; align-items: center; width: 100%; gap: 60px; margin-top: 10px; }
+        .ingredients-panel { display: flex; flex-direction: column; gap: 15px; background-color: #fff; padding: 20px; border-radius: 15px; border: 4px solid #333; box-shadow: 0 5px 10px rgba(0,0,0,0.1); width: 200px; }
+        .ingredient-wrapper { position: relative; width: 100%; }
+        .ingredient-btn { background-color: #ecf0f1; border: 3px solid #bdc3c7; border-radius: 10px; padding: 12px 15px; font-size: 22px; font-family: 'Comic Neue', cursive; cursor: pointer; font-weight: bold; transition: all 0.2s; text-align: left; width: 100%; }
+        .ingredient-btn:hover { background-color: #e0e6ed; transform: scale(1.05); }
+        .ingredient-btn.selected { background-color: #f1c40f; border-color: #f39c12; box-shadow: 0 0 10px rgba(243, 156, 18, 0.8); transform: scale(1.1); }
+
+        .food-area { position: relative; display: flex; justify-content: center; align-items: center; width: 350px; height: 350px; }
+        
+        .pizza { width: 320px; height: 320px; border-radius: 50%; display: flex; overflow: hidden; border: 15px solid #f39c12; background: radial-gradient(#fdf5e6, #f39c12); box-shadow: 0 10px 20px rgba(0,0,0,0.2); cursor: pointer; transition: clip-path 0.5s ease-out; touch-action: none;}
+        .cake { width: 320px; height: 320px; border-radius: 20px; display: flex; overflow: hidden; border: 8px solid #8e44ad; background: linear-gradient(#fceae8, #8e44ad); box-shadow: 0 10px 20px rgba(0,0,0,0.2); cursor: pointer; transition: clip-path 0.5s ease-out; touch-action: none;}
+
+        .topping-cheese { background-image: radial-gradient(circle at 50% 50%, #f1c40f, transparent 15%); background-size: 30px 30px; }
+        .topping-pepperoni { position: relative; }
+        .topping-pepperoni::after { content: ''; position: absolute; width: 100%; height: 100%; top: 0; left: 0; background-image: radial-gradient(circle at 50% 50%, #e74c3c 10%, #c0392b 40%, transparent 60%); background-size: 40px 40px; }
+        .topping-bbq { position: relative; }
+        .topping-bbq::after { content: ''; position: absolute; width: 100%; height: 100%; top: 0; left: 0; background-image: radial-gradient(circle at 50% 50%, #d35400 10%, transparent 60%); background-size: 35px 35px; }
+
+        .topping-cream { background-color: rgba(236, 240, 241, 0.5); }
+        .topping-oreo { position: relative; }
+        .topping-oreo::after { content: ''; position: absolute; width: 100%; height: 100%; top: 0; left: 0; background-image: radial-gradient(circle at 50% 50%, #2c3e50 10%, #1b1b2f 40%, transparent 60%); background-size: 40px 40px; }
+        .topping-coklat { position: relative; }
+        .topping-coklat::after { content: ''; position: absolute; width: 100%; height: 100%; top: 0; left: 0; background-image: radial-gradient(circle at 50% 50%, #3e2723 10%, transparent 60%); background-size: 35px 35px; }
+
+        /* Garisan sempadan (border-right) diuruskan secara dinamik melalui JavaScript */
+        .half-left, .half-right { width: 50%; height: 100%; display: flex; justify-content: center; align-items: center; transition: background-color 0.3s; position: relative; z-index: 5; }
+
+        .guide-text-half { font-size: 60px; font-weight: bold; color: rgba(0, 0, 0, 0.3); pointer-events: none; display: none; }
+
+        /* Animasi Tangan (3 Fasa) */
+        .tut-hand-ing { position: absolute; right: -55px; top: 0px; font-size: 50px; animation: pointLeft 1s infinite; pointer-events: none; z-index: 10; }
+        @keyframes pointLeft { 0% { transform: translateX(0); } 50% { transform: translateX(-15px); } 100% { transform: translateX(0); } }
+
+        .tut-hand-pizza { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 70px; animation: pointDownPizza 1s infinite; pointer-events: none; z-index: 30; display: none; filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.4));}
+        @keyframes pointDownPizza { 0% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -20px); } 100% { transform: translate(-50%, -50%); } }
+
+        .tut-hand-swipe { position: absolute; left: 50%; top: 50%; margin-left: -35px; font-size: 70px; animation: swipeDownAnim 1.5s infinite; pointer-events: none; z-index: 40; display: none; filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.4)); }
+        @keyframes swipeDownAnim { 0% { transform: translateY(-70px); opacity: 0; } 20% { opacity: 1; } 80% { transform: translateY(70px); opacity: 1; } 100% { transform: translateY(70px); opacity: 0; } }
+
+        .cutting-knife { position: absolute; font-size: 80px; top: -30%; left: 50%; transform: translateX(-50%) rotate(0deg); opacity: 0; z-index: 20; transition: all 0.5s ease-in-out; pointer-events: none;}
+        .animate-cut { opacity: 1; top: 100%; }
+
+        .customer-order-bar { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 80px; }
+
+        /* Skrin Sambutan Separuh */
+        #half-celebration { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        @keyframes starburst { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+        .confetti-effect { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="10" cy="10" r="5" fill="%23f1c40f"/><circle cx="90" cy="10" r="5" fill="%23e74c3c"/><circle cx="10" cy="90" r="5" fill="%23d35400"/><circle cx="90" cy="90" r="5" fill="%23fff"/></svg>') repeat; animation: starburst 1.5s infinite linear; pointer-events: none; }
+        .celebration-text { font-size: 80px; color: #fff; font-weight: bold; text-shadow: 0 0 10px #f1c40f, 0 0 20px #e74c3c; z-index: 10; }
+        .action-buttons { display: flex; gap: 20px; justify-content: center; margin-top: 20px; position: relative; }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    
+    <audio id="bg-music" src="https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3" loop preload="auto"></audio>
+    <audio id="yay-sound" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3" preload="auto"></audio>
+    <audio id="sad-sound" src="https://www.myinstants.com/media/sounds/sadtrombone.swf.mp3" preload="auto"></audio>
+    
+    <audio id="separuh-voice" src="https://res.cloudinary.com/dz2vizcjb/video/upload/v1772216696/video_2026-02-28_02-23-32_jecbub.mp4" preload="auto"></audio>
+
+    <div id="half-celebration">
+        <div class="confetti-effect"></div>
+        <div class="celebration-text">separuh!!🎊</div>
+    </div>
+
+    <div id="intro-screen" class="screen active shop-front-bg">
+        <div class="stripe-awning"></div>
+        
+        <h1 class="game-title">Hunting Job with<br>Chef Simon</h1>
+        
+        <div class="intro-modal">
+            <div class="img-container">
+                <img src="https://res.cloudinary.com/dz2vizcjb/image/upload/v1772201842/Screenshot_2026-02-27_221430_mxcyal.png" alt="Pengenalan Chef">
+            </div>
+            <button class="btn btn-mula" onclick="unlockAudioAndStart()">MULA</button>
+        </div>
+    </div>
+
+    <div id="map-screen" class="screen">
+        <div class="stripe-awning"></div>
+        <div class="top-bar">
+            <span>Peta Misi</span>
+            <span id="map-money">Duit: RM 0</span>
+        </div>
+        
+        <svg width="100%" height="100%" style="position:absolute; top:0; left:0; z-index: 1; pointer-events: none;">
+            <path d="M -50 450 C 300 450, 350 200, 850 200" stroke="#ffffff" stroke-width="100" fill="transparent" />
+            <path d="M -50 450 C 300 450, 350 200, 850 200" stroke="#333333" stroke-width="80" fill="transparent" />
+            <path d="M -50 450 C 300 450, 350 200, 850 200" stroke="#ffffff" stroke-width="8" stroke-dasharray="30 30" fill="transparent" />
+        </svg>
+
+        <div class="shop-container" style="top: 280px; left: 100px;" onclick="openLevelSelection(1)">
+            <span class="shop-pin" style="color: #e74c3c;">📍</span>
+            <span class="shop-food-icon">🍕</span>
+            <span class="shop-building-icon">🏪</span>
+            <div class="shop-label">Kedai Pizza</div>
+        </div>
+
+        <div class="shop-container locked" id="cake-shop-container" style="top: 30px; left: 580px;" onclick="handleCakeShopClick()">
+            <span class="shop-pin" style="color: #f1c40f; filter: hue-rotate(45deg);">📍</span>
+            <span class="shop-food-icon">🍰</span>
+            <span class="shop-building-icon">🏪</span>
+            <div class="shop-label">Kedai Kek</div>
+            <div class="lock-icon" id="cake-lock">🔒</div>
+        </div>
+    </div>
+
+    <div id="level-screen" class="screen">
+        <div class="stripe-awning"></div>
+        <div class="top-bar">
+            <span id="level-title">Pilih Level</span>
+            <button class="btn btn-small" onclick="showScreen('map-screen')">Kembali</button>
+        </div>
+        <div class="levels-container" id="levels-container"></div>
+    </div>
+
+    <div id="instruction-screen" class="screen">
+        <div class="stripe-awning"></div>
+        <div class="top-bar" style="justify-content: center;">
+            <span>Arahan</span>
+        </div>
+        <img id="dialog-character-img" src="" alt="Watak" class="dialog-character-img" style="margin-top: 80px;">
+        <div class="chat-bubble" id="instruction-dialog-text">Teks akan muncul di sini...</div>
+        <button class="btn" id="dialog-btn" onclick="nextInstructionStep()">NEXT</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="stripe-awning"></div>
+        <div class="top-bar">
+            <span id="game-level-text" style="color:#27ae60;">Event 1 - Level 1</span>
+            <span id="game-money" style="color:#27ae60;">Duit: RM 0</span>
+        </div>
+        
+        <div class="customer-order-bar">
+            <img src="https://res.cloudinary.com/dz2vizcjb/image/upload/v1772203016/download_ibkp3v.jpg" alt="Pelanggan" style="height: 80px; width: 80px; object-fit: cover; border-radius: 50%; border: 3px solid #333;">
+            <div class="dialog-box" id="order-text" style="font-size: 20px; padding: 10px 20px; margin: 0; width: auto; border-radius: 10px;">"Saya nak separuh pizza pepperoni"</div>
+        </div>
+
+        <div class="gameplay-layout">
+            <div class="ingredients-panel" id="ingredients-panel"></div>
+
+            <div class="food-area">
+                <div class="cutting-knife" id="cutting-knife">🔪</div>
+                
+                <div id="food-item" class="food-item pizza">
+                    <div id="half-left" class="half-left">
+                        <span class="guide-text-half">1/2</span>
+                    </div>
+                    <div id="half-right" class="half-right">
+                        <span class="guide-text-half">1/2</span>
+                    </div>
+                    <div class="tut-hand-pizza" id="tut-hand-pizza">👇</div>
+                    <div class="tut-hand-swipe" id="tut-hand-swipe">👈</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn" style="background-color: #27ae60; box-shadow: 0 5px 0 #1e8449;" onclick="checkAnswer()">✅ Hantar Pesanan</button>
+        </div>
+    </div>
+
+    <div id="feedback-screen" class="screen">
+        <div class="stripe-awning"></div>
+        <div class="top-bar">
+            <span id="feedback-level-text">Event 1 - Level 1</span>
+            <span id="feedback-money">Duit: RM 0</span>
+        </div>
+        
+        <img src="https://res.cloudinary.com/dz2vizcjb/image/upload/v1772203016/download_ibkp3v.jpg" alt="Pelanggan" class="dialog-character-img" style="border-radius: 50%; border: 5px solid #333; object-fit: cover; width: 220px; margin-top: 80px;">
+        
+        <div class="chat-bubble" id="feedback-dialog-text"> Maklum balas pelanggan... </div>
+        <button class="btn" id="feedback-btn" onclick="handleFeedbackProceed()">Seterusnya</button>
+    </div>
+
+    <div id="end-screen" class="screen">
+        <div class="stripe-awning"></div>
+        <img src="https://res.cloudinary.com/dz2vizcjb/image/upload/v1772204387/download_wszp33.jpg" alt="Chef Utama" class="character-img" style="border-radius: 20px; border: 4px solid #333; margin-top: 80px;">
+        <h1>GAME TAMAT!</h1>
+        <div class="dialog-box"> Tahniah! Anda telah belajar bahawa <strong>1/2</strong> adalah sama dengan <strong>SETENGAH</strong> dan <strong>SEPARUH</strong>! </div>
+        <button class="btn" onclick="location.reload()">Main Semula</button>
+    </div>
+
+</div>
+
+<script>
+    // --- State Management ---
+    let money = 0;
+    let currentEvent = 1; 
+    let currentLevel = 1;
+    let flavorLeft = "kosong";
+    let flavorRight = "kosong";
+    let selectedIngredient = "kosong"; 
+    let isCut = false; 
+    
+    let unlockedLevels = { 1: 1, 2: 1 };
+    let dialogStep = 1;
+    let selectedLevelToPlay = 1;
+    let lastAnswerCorrect = false; 
+
+    // --- Start Game & Audio Unlocker ---
+    function unlockAudioAndStart() {
+        const yayAudio = document.getElementById('yay-sound');
+        const sadAudio = document.getElementById('sad-sound');
+        const bgMusic = document.getElementById('bg-music');
+        const separuhVoice = document.getElementById('separuh-voice');
+
+        // Mainkan BGM
+        bgMusic.volume = 0.25; 
+        let playBgm = bgMusic.play();
+        if(playBgm !== undefined) playBgm.catch(e => console.log("BGM blocked:", e));
+
+        // Unlock sound effects
+        yayAudio.volume = 0;
+        let playYay = yayAudio.play();
+        if (playYay !== undefined) { playYay.then(_ => { yayAudio.pause(); yayAudio.currentTime = 0; yayAudio.volume = 1; }).catch(e => console.log(e)); }
+
+        sadAudio.volume = 0;
+        let playSad = sadAudio.play();
+        if (playSad !== undefined) { playSad.then(_ => { sadAudio.pause(); sadAudio.currentTime = 0; sadAudio.volume = 1; }).catch(e => console.log(e)); }
+        
+        separuhVoice.volume = 0;
+        let playSep = separuhVoice.play();
+        if (playSep !== undefined) { playSep.then(_ => { separuhVoice.pause(); separuhVoice.currentTime = 0; separuhVoice.volume = 1; }).catch(e => console.log(e)); }
+        
+        // Pindah ke Map Screen. Skrin depan akan automatik hilang kerana class 'active' ditukar
+        showScreen('map-screen');
+        document.getElementById('map-money').innerText = `Duit: RM ${money}`;
+    }
+    
+    const CHEF_IMG = "https://res.cloudinary.com/dz2vizcjb/image/upload/v1772204387/download_wszp33.jpg";
+    const CUSTOMER_IMG = "https://res.cloudinary.com/dz2vizcjb/image/upload/v1772203016/download_ibkp3v.jpg";
+
+    const levelData = {
+        1: { 
+            1: { type: 'pizza', order: "separuh pizza pepperoni", reward: 30, targetIng: 'pepperoni', guide: true, 
+                 options: [ { id: 'cheese', name: '🧀 Cheese', class: 'cheese' }, { id: 'pepperoni', name: '🍕 Pepperoni', class: 'pepperoni' }, { id: 'bbq', name: '🍗 BBQ Ayam', class: 'bbq' }, { id: 'kosong', name: '🧹 Padam', class: '' } ],
+                 correctFn: (l, r) => (l === "pepperoni" && r === "kosong") || (r === "pepperoni" && l === "kosong") },
+            2: { type: 'pizza', order: "separuh pizza pepperoni", reward: 30, guide: false, targetIng: 'pepperoni',
+                 options: [ { id: 'cheese', name: '🧀 Cheese', class: 'cheese' }, { id: 'pepperoni', name: '🍕 Pepperoni', class: 'pepperoni' }, { id: 'bbq', name: '🍗 BBQ Ayam', class: 'bbq' }, { id: 'kosong', name: '🧹 Padam', class: '' } ],
+                 correctFn: (l, r) => (l === "pepperoni" && r === "kosong") || (r === "pepperoni" && l === "kosong") },
+            3: { type: 'pizza', order: "setengah pizza pepperoni dan setengah pizza bbq ayam", reward: 40, guide: false, targetIng: 'pepperoni',
+                 options: [ { id: 'cheese', name: '🧀 Cheese', class: 'cheese' }, { id: 'pepperoni', name: '🍕 Pepperoni', class: 'pepperoni' }, { id: 'bbq', name: '🍗 BBQ Ayam', class: 'bbq' }, { id: 'kosong', name: '🧹 Padam', class: '' } ],
+                 correctFn: (l, r) => (l === "pepperoni" && r === "bbq") || (r === "pepperoni" && l === "bbq") }
+        },
+        2: { 
+            1: { type: 'cake', order: "separuh kek oreo", reward: 30, targetIng: 'oreo', guide: true, 
+                 options: [ { id: 'cream', name: '🥛 Cream', class: 'cream' }, { id: 'oreo', name: '🍪 Oreo', class: 'oreo' }, { id: 'coklat', name: '🍫 Coklat', class: 'coklat' }, { id: 'kosong', name: '🧹 Padam', class: '' } ],
+                 correctFn: (l, r) => (l === "oreo" && r === "kosong") || (r === "oreo" && l === "kosong") },
+            2: { type: 'cake', order: "separuh kek oreo", reward: 30, guide: false, targetIng: 'oreo',
+                 options: [ { id: 'cream', name: '🥛 Cream', class: 'cream' }, { id: 'oreo', name: '🍪 Oreo', class: 'oreo' }, { id: 'coklat', name: '🍫 Coklat', class: 'coklat' }, { id: 'kosong', name: '🧹 Padam', class: '' } ],
+                 correctFn: (l, r) => (l === "oreo" && r === "kosong") || (r === "oreo" && l === "kosong") },
+            3: { type: 'cake', order: "setengah kek oreo dan setengah kek coklat", reward: 40, guide: false, targetIng: 'oreo',
+                 options: [ { id: 'cream', name: '🥛 Cream', class: 'cream' }, { id: 'oreo', name: '🍪 Oreo', class: 'oreo' }, { id: 'coklat', name: '🍫 Coklat', class: 'coklat' }, { id: 'kosong', name: '🧹 Padam', class: '' } ],
+                 correctFn: (l, r) => (l === "oreo" && r === "coklat") || (r === "oreo" && l === "coklat") }
+        }
+    };
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        
+        if(screenId === 'map-screen') {
+            document.getElementById('map-money').innerText = `Duit: RM ${money}`;
+            if (money >= 100) {
+                const cakeShop = document.getElementById('cake-shop-container');
+                cakeShop.classList.remove('locked');
+                document.getElementById('cake-lock').style.display = 'none';
+            }
+        }
+    }
+
+    function handleCakeShopClick() {
+        if (money >= 100) { openLevelSelection(2); } else { alert("Kedai Kek masih dikunci. Anda perlukan RM 100 hasil dari Kedai Pizza untuk membukanya!"); }
+    }
+
+    function openLevelSelection(eventNum) {
+        currentEvent = eventNum;
+        let titleText = eventNum === 1 ? '🍕 Kedai Pizza' : '🍰 Kedai Kek';
+        document.getElementById('level-title').innerText = titleText;
+        
+        const container = document.getElementById('levels-container');
+        container.innerHTML = ''; 
+        const maxLevelUnlocked = unlockedLevels[currentEvent];
+
+        for (let i = 1; i <= 3; i++) {
+            const isLocked = i > maxLevelUnlocked;
+            const circle = document.createElement('div');
+            circle.className = isLocked ? 'level-circle locked-level' : 'level-circle';
+            
+            let imgHTML = `<img src="${CHEF_IMG}" style="height: 100px; object-fit: cover; width:100px; border-radius:50%">`;
+            
+            if (!isLocked) { circle.onclick = () => startInstructionSequence(i); circle.innerHTML = `<div class="level-text">LEVEL<br>${i}</div><div class="level-icon">${imgHTML}</div>`; } 
+            else { circle.innerHTML = `<div class="level-text">LEVEL<br>${i}</div><div class="padlock-large">🔒</div>`; }
+            container.appendChild(circle);
+        }
+        showScreen('level-screen');
+    }
+
+    function startInstructionSequence(levelNum) {
+        selectedLevelToPlay = levelNum;
+        currentLevel = levelNum; 
+        dialogStep = 1; 
+        updateDialogUI();
+        showScreen('instruction-screen');
+    }
+
+    function updateDialogUI() {
+        const charImg = document.getElementById('dialog-character-img');
+        const dialogText = document.getElementById('instruction-dialog-text');
+        const btn = document.getElementById('dialog-btn');
+        let shopName = currentEvent === 1 ? "pizza" : "kek";
+
+        if (dialogStep === 1) { charImg.src = CHEF_IMG; charImg.style.borderRadius = "20px"; charImg.style.border = "4px solid #333"; charImg.style.width="auto"; dialogText.innerText = `Hai! Selamat datang ke kedai ${shopName} anda! Nama saya Simon. Saya akan tunjukkan cara bekerja di sini.`; btn.innerText = "NEXT"; } 
+        else if (dialogStep === 2) { charImg.src = CHEF_IMG; charImg.style.borderRadius = "20px"; charImg.style.border = "4px solid #333"; dialogText.innerText = "Pelanggan kita dah sampai, jom dengar apa yang mereka nak!"; btn.innerText = "NEXT"; } 
+        else if (dialogStep === 3) { charImg.src = CUSTOMER_IMG; charImg.style.borderRadius = "50%"; charImg.style.border = "5px solid #333"; charImg.style.objectFit = "cover"; charImg.style.width = "220px"; dialogText.innerText = `Saya nak ${levelData[currentEvent][currentLevel].order}`; btn.innerText = "Terima Pesanan"; }
+    }
+
+    function nextInstructionStep() {
+        if (dialogStep < 3) { dialogStep++; updateDialogUI(); } 
+        else { loadGameScreen(selectedLevelToPlay); }
+    }
+
+    function loadGameScreen(levelNum) {
+        showScreen('game-screen');
+        const levelInfo = levelData[currentEvent][currentLevel];
+        
+        document.getElementById('game-level-text').innerText = `Event ${currentEvent} - Level ${currentLevel}`;
+        document.getElementById('game-money').innerText = `Duit: RM ${money}`;
+        document.getElementById('order-text').innerText = `"Saya nak ${levelInfo.order}"`;
+        
+        flavorLeft = "kosong"; flavorRight = "kosong"; selectedIngredient = "kosong"; isCut = false;
+
+        const foodItem = document.getElementById('food-item');
+        foodItem.className = `food-item ${levelInfo.type}`;
+        foodItem.style.clipPath = 'none'; 
+        
+        const panel = document.getElementById('ingredients-panel');
+        panel.innerHTML = ''; 
+        let targetIngredient = levelInfo.targetIng;
+        
+        levelInfo.options.forEach(opt => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'ingredient-wrapper';
+            const btn = document.createElement('button');
+            btn.className = 'ingredient-btn';
+            btn.innerText = opt.name;
+            btn.onclick = () => selectIngredient(opt.id, btn);
+            wrapper.appendChild(btn);
+
+            if (levelInfo.guide && opt.id === targetIngredient) { const hand = document.createElement('div'); hand.className = 'tut-hand-ing'; hand.id = 'tut-hand-ing'; hand.innerText = '👈'; wrapper.appendChild(hand); }
+            panel.appendChild(wrapper);
+        });
+
+        // Setup paparan panduan tangan dan garisan
+        if (levelInfo.guide) { 
+            document.querySelectorAll('.guide-text-half').forEach(el => el.style.display = 'block'); 
+            document.getElementById('tut-hand-swipe').style.display = 'none'; 
+            document.getElementById('tut-hand-pizza').style.display = 'none'; 
+            document.getElementById('half-left').style.borderRight = '4px dashed #333'; // Garisan putus untuk Level 1
+        } else { 
+            document.querySelectorAll('.guide-text-half').forEach(el => el.style.display = 'none'); 
+            document.getElementById('tut-hand-swipe').style.display = 'none'; 
+            document.getElementById('tut-hand-pizza').style.display = 'none'; 
+            document.getElementById('half-left').style.borderRight = 'none'; // Buang garisan untuk Level 2 & 3
+        }
+        
+        updateFoodVisuals();
+    }
+
+    function selectIngredient(ingId, btnElement) {
+        selectedIngredient = ingId;
+        document.querySelectorAll('.ingredient-btn').forEach(btn => btn.classList.remove('selected'));
+        btnElement.classList.add('selected');
+        
+        const levelInfo = levelData[currentEvent][currentLevel];
+        if(levelInfo.guide) {
+            // Hilangkan Tangan 1
+            const ingHand = document.getElementById('tut-hand-ing');
+            if(ingHand) ingHand.style.display = 'none';
+
+            // Munculkan Tangan 2 di atas permukaan pizza/kek
+            const pizzaHand = document.getElementById('tut-hand-pizza');
+            if(pizzaHand && (flavorLeft === 'kosong' || flavorRight === 'kosong')) {
+                pizzaHand.style.display = 'block';
+            }
+        }
+    }
+
+    // --- SWIPE TO CUT LOGIC ---
+    let swipeStart = null;
+    document.addEventListener("DOMContentLoaded", () => {
+        const foodItemEl = document.getElementById('food-item');
+        
+        foodItemEl.addEventListener('pointerdown', (e) => {
+            swipeStart = { x: e.clientX, y: e.clientY };
+        });
+
+        foodItemEl.addEventListener('pointerup', (e) => {
+            handlePointerEnd(e);
+        });
+
+        foodItemEl.addEventListener('pointerleave', (e) => {
+            if (swipeStart && e.buttons > 0) { handlePointerEnd(e); } 
+            else { swipeStart = null; }
+        });
+
+        function handlePointerEnd(e) {
+            if (!swipeStart) return;
+            let dx = e.clientX - swipeStart.x;
+            let dy = e.clientY - swipeStart.y;
+            let distance = Math.hypot(dx, dy);
+            
+            if (distance > 50) {
+                // Tindakan Meleret (Swipe) => Potong!
+                performCut();
+            } else {
+                // Tindakan Menyentuh/Klik => Letak Topping!
+                let rect = foodItemEl.getBoundingClientRect();
+                let clickX = e.clientX - rect.left;
+                if (clickX < rect.width / 2) { applyIngredient('left'); } 
+                else { applyIngredient('right'); }
+            }
+            swipeStart = null;
+        }
+    });
+
+    function applyIngredient(side) {
+        if (isCut) { alert("Makanan telah dipotong! Anda perlu hantar pesanan."); return; }
+        if (selectedIngredient === "kosong" && !document.querySelector('.ingredient-btn.selected')) { alert("Sila pilih bahan (topping) di sebelah kiri dahulu!"); return; }
+
+        if (side === 'left') { flavorLeft = selectedIngredient; } 
+        else { flavorRight = selectedIngredient; }
+
+        // Hilangkan Tangan 2 (Tap)
+        const pizzaHand = document.getElementById('tut-hand-pizza');
+        if(pizzaHand) pizzaHand.style.display = 'none';
+
+        updateFoodVisuals();
+
+        const levelInfo = levelData[currentEvent][currentLevel];
+        // Munculkan Tangan 3 (Swipe/Leret)
+        if (levelInfo.guide && (flavorLeft !== "kosong" || flavorRight !== "kosong")) {
+            document.getElementById('tut-hand-swipe').style.display = 'block';
+        }
+    }
+
+    function updateFoodVisuals() {
+        const levelInfo = levelData[currentEvent][currentLevel];
+        const leftDiv = document.getElementById('half-left');
+        const rightDiv = document.getElementById('half-right');
+
+        leftDiv.className = 'half-left'; 
+        rightDiv.className = 'half-right';
+
+        if(flavorLeft !== "kosong") {
+            let selectedOpt = levelInfo.options.find(opt => opt.id === flavorLeft);
+            if(selectedOpt) leftDiv.classList.add(`topping-${selectedOpt.class}`);
+        }
+        if(flavorRight !== "kosong") {
+            let selectedOpt = levelInfo.options.find(opt => opt.id === flavorRight);
+            if(selectedOpt) rightDiv.classList.add(`topping-${selectedOpt.class}`);
+        }
+    }
+
+    function performCut() {
+        if (isCut) return; 
+        if (flavorLeft === "kosong" && flavorRight === "kosong") { alert("Sila letak topping terlebih dahulu sebelum memotong!"); return; }
+
+        // Hilangkan Tangan 3 (Swipe Hand)
+        const tutHandSwipe = document.getElementById('tut-hand-swipe');
+        if(tutHandSwipe) tutHandSwipe.style.display = 'none';
+        
+        const cuttingKnife = document.getElementById('cutting-knife');
+        cuttingKnife.classList.add('animate-cut');
+
+        setTimeout(() => {
+            isCut = true;
+            const foodItem = document.getElementById('food-item');
+            
+            if (flavorLeft !== "kosong" && flavorRight === "kosong") { foodItem.style.clipPath = 'polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%)'; } 
+            else if (flavorRight !== "kosong" && flavorLeft === "kosong") { foodItem.style.clipPath = 'polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)'; } 
+            else { document.getElementById('half-left').style.borderRight = '6px solid #fff'; }
+
+            const levelInfo = levelData[currentEvent][currentLevel];
+            if (levelInfo.correctFn(flavorLeft, flavorRight)) { 
+                // Tunjuk UI Pop-up "Separuh!!🎊"
+                const celebScreen = document.getElementById('half-celebration');
+                celebScreen.style.display = 'flex';
+                
+                // MAIN AUDIO SEPARUH DARI LINK VIDEO
+                const separuhVoice = document.getElementById('separuh-voice');
+                separuhVoice.currentTime = 0;
+                separuhVoice.play().catch(e => console.log(e));
+
+                setTimeout(() => { celebScreen.style.display = 'none'; }, 2000); 
+            }
+
+            cuttingKnife.classList.remove('animate-cut');
+        }, 500); 
+    }
+
+    function checkAnswer() {
+        if (!isCut) { alert("Tunggu! Anda perlu potong (leret/swipe pada makanan) sebelum menghantar pesanan."); return; }
+
+        const levelInfo = levelData[currentEvent][currentLevel];
+        lastAnswerCorrect = levelInfo.correctFn(flavorLeft, flavorRight);
+        showFeedbackScreen(lastAnswerCorrect);
+    }
+
+    function showFeedbackScreen(isCorrect) {
+        showScreen('feedback-screen');
+        document.getElementById('feedback-level-text').innerText = `Event ${currentEvent} - Level ${currentLevel}`;
+        document.getElementById('feedback-money').innerText = `Duit: RM ${money}`;
+        const dialogText = document.getElementById('feedback-dialog-text');
+        const btn = document.getElementById('feedback-btn');
+        let shopName = currentEvent === 1 ? "pizza" : "kek";
+
+        if (isCorrect) { 
+            dialogText.innerHTML = `Wah, betul! Ini memang separuh ${shopName}. Terima kasih!`; 
+            btn.innerText = "Seterusnya"; 
+            
+            // MAIN BUNYI YEAY APABILA PELANGGAN GEMBIRA
+            const yayAudio = document.getElementById('yay-sound');
+            yayAudio.currentTime = 0;
+            yayAudio.play().catch(e => console.log("Yay sound blocked: ", e));
+        } 
+        else { 
+            dialogText.innerHTML = `Hmm... ini bukan separuh ${shopName}. Cuba lagi ya.`; 
+            btn.innerText = "Cuba Lagi"; 
+
+            const sadSound = document.getElementById('sad-sound');
+            sadSound.currentTime = 0;
+            sadSound.play().catch(e => console.log("Sad sound blocked: ", e));
+        }
+    }
+
+    function handleFeedbackProceed() {
+        if (!lastAnswerCorrect) { 
+            openLevelSelection(currentEvent); 
+            return; 
+        }
+
+        const levelInfo = levelData[currentEvent][currentLevel];
+        money += levelInfo.reward;
+        
+        if(currentLevel < 3) { unlockedLevels[currentEvent] = Math.max(unlockedLevels[currentEvent], currentLevel + 1); }
+
+        if (currentLevel === 3) {
+            if (currentEvent === 1 && money >= 100) { alert("Hebat! Anda dah selesaikan semua level Kedai Pizza dan dapat RM100. Kedai Kek kini dibuka di peta!"); showScreen('map-screen'); } 
+            else if (currentEvent === 2) { showScreen('end-screen'); } 
+            else { showScreen('map-screen'); }
+        } else { openLevelSelection(currentEvent); }
+    }
+</script>
+
+</body>
+</html>
